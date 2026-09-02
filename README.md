@@ -6,10 +6,55 @@ Hawk — A PHP Implementation
 > — [hawk README][0]
 
 
+About this fork
+---------------
+
+This is a maintained fork of [dflydev/hawk][4] by Beau Simensen and Dragonfly
+Development Inc. The original package was last released in 2013 and is no longer
+developed; the MIT licence and the original authorship are kept intact, and the
+protocol behaviour is unchanged.
+
+What the fork changes:
+
+ * **Runs on modern PHP.** Requires PHP 8.3+, declares strict types, uses typed
+   properties and promoted constructors. The original relied on dynamic
+   properties, which PHP 8.2 deprecated and PHP 9 will reject outright.
+ * **No dependencies.** Nonces now come from `random_bytes()` instead of
+   `ircmaxell/random-lib`'s *low strength* generator, which is built on
+   `mt_rand()` and explicitly documented there as unsuitable for cryptography.
+ * **Constant-time MAC comparison everywhere**, via `hash_equals()`. The client
+   used to compare response MACs with `!==`.
+ * **`ext` is escaped in the normalized string**, as the Hawk specification
+   requires. Without it, a newline inside `ext` shifts the field boundaries, so
+   two different requests can produce the same MAC.
+ * **Header values are escaped, and CR/LF are rejected.** The original
+   interpolated attribute values straight between quotes, so a value containing
+   a quote or a newline produced a malformed — or injected — header.
+ * **Malformed input is refused, not crashed on.** A short bewit, a non-numeric
+   timestamp or an unknown credentials id used to raise PHP warnings or a
+   `TypeError` — a 500 driven by request content — instead of an authentication
+   failure.
+ * **Sensitive parameters are marked as such**, so the shared key stays out of
+   stack traces and `var_dump()` output.
+
+Wire compatibility is preserved: a bewit or an `Authorization` header issued by
+`dflydev/hawk` verifies here and vice versa. The single exception is `ext`
+escaping, which only affects requests that actually use `ext` — and which brings
+this implementation in line with the reference one.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+
 Installation
 ------------
 
-Through [Composer][1] as [dflydev/hawk][2].
+Through [Composer][1] as [byfareska/hawk][2]:
+
+```bash
+composer require byfareska/hawk
+```
+
+Requires PHP 8.3 or newer. No runtime dependencies.
 
 
 Client
@@ -27,7 +72,7 @@ without setting anything to get sane defaults.
 <?php
 
 // Simple example
-$client = Dflydev\Hawk\Client\ClientBuilder::create()
+$client = Byfareska\Hawk\Client\ClientBuilder::create()
     ->build()
 ```
 
@@ -37,7 +82,7 @@ $client = Dflydev\Hawk\Client\ClientBuilder::create()
 <?php
 
 // A complete example
-$client = Dflydev\Hawk\Client\ClientBuilder::create()
+$client = Byfareska\Hawk\Client\ClientBuilder::create()
     ->setCrypto($crypto)
     ->setTimeProvider($timeProvider)
     ->setNonceProvider($nonceProvider)
@@ -142,14 +187,14 @@ $isAuthenticatedResponse = $client->authenticate(
 <?php
 
 // Create a set of Hawk credentials
-$credentials = new Dflydev\Hawk\Credentials\Credentials(
+$credentials = new Byfareska\Hawk\Credentials\Credentials(
     'afe89a3x',  // shared key
     'sha256',    // default: sha256
     '12345'      // identifier, default: null
 );
 
 // Create a Hawk client
-$client = Dflydev\Hawk\Client\ClientBuilder::create()
+$client = Byfareska\Hawk\Client\ClientBuilder::create()
     ->build();
 
 // Create a Hawk request based on making a POST request to a specific URL
@@ -239,7 +284,7 @@ without setting anything but the credentials provider to get sane defaults.
 
 $credentialsProvider = function ($id) {
     if ('12345' === $id) {
-        return new Dflydev\Hawk\Credentials\Credentials(
+        return new Byfareska\Hawk\Credentials\Credentials(
             'afe89a3x',  // shared key
             'sha256',    // default: sha256
             '12345'      // identifier, default: null
@@ -248,7 +293,7 @@ $credentialsProvider = function ($id) {
 };
 
 // Simple example
-$server = Dflydev\Hawk\Server\ServerBuilder::create($credentialsProvider)
+$server = Byfareska\Hawk\Server\ServerBuilder::create($credentialsProvider)
     ->build()
 ```
 
@@ -259,7 +304,7 @@ $server = Dflydev\Hawk\Server\ServerBuilder::create($credentialsProvider)
 
 $credentialsProvider = function ($id) {
     if ('12345' === $id) {
-        return new Dflydev\Hawk\Credentials\Credentials(
+        return new Byfareska\Hawk\Credentials\Credentials(
             'afe89a3x',  // shared key
             'sha256',    // default: sha256
             '12345'      // identifier, default: null
@@ -268,7 +313,7 @@ $credentialsProvider = function ($id) {
 };
 
 // A complete example
-$server = Dflydev\Hawk\Server\ServerBuilder::create($credentialsProvider)
+$server = Byfareska\Hawk\Server\ServerBuilder::create($credentialsProvider)
     ->setCrypto($crypto)
     ->setTimeProvider($timeProvider)
     ->setNonceValidator($nonceValidator)
@@ -307,7 +352,7 @@ try {
         'hello world!'
         $authorization
     );
-} catch(Dflydev\Hawk\Server\UnauthorizedException $e) {
+} catch(Byfareska\Hawk\Server\UnauthorizedException $e) {
     // If authorization is incorrect (invalid mac, etc.) we can catch an
     // unauthorized exception.
     throw $e;
@@ -367,7 +412,7 @@ header(sprintf("%s: %s", $header->fieldName(), $header->fieldValue()));
 // Create a simple credentials provider
 $credentialsProvider = function ($id) {
     if ('12345' === $id) {
-        return new Dflydev\Hawk\Credentials\Credentials(
+        return new Byfareska\Hawk\Credentials\Credentials(
             'afe89a3x',  // shared key
             'sha256',    // default: sha256
             '12345'      // identifier, default: null
@@ -376,7 +421,7 @@ $credentialsProvider = function ($id) {
 };
 
 // Create a Hawk server
-$server = Dflydev\Hawk\Server\ServerBuilder::create($credentialsProvider)
+$server = Byfareska\Hawk\Server\ServerBuilder::create($credentialsProvider)
     ->build()
 
 // Get the authorization header for the request; it should be in the form
@@ -393,7 +438,7 @@ try {
         'hello world!'
         $authorization
     );
-} catch(Dflydev\Hawk\Server\UnauthorizedException $e) {
+} catch(Byfareska\Hawk\Server\UnauthorizedException $e) {
     // If authorization is incorrect (invalid mac, etc.) we can catch an
     // unauthorized exception.
     throw $e;
@@ -449,7 +494,7 @@ $response = $server->authenticateBewit(
 Crypto
 ------
 
-### Dflydev\Hawk\Crypto\Crypto
+### Byfareska\Hawk\Crypto\Crypto
 
 Tools for calculation of and comparison of MAC values.
 
@@ -457,11 +502,15 @@ Tools for calculation of and comparison of MAC values.
  * **calculateMac($type, CredentialsInterface $credentials, Artifacts $attributes)**
  * **calculateTsMac($ts, CredentialsInterface $credentials)**
  * **fixedTimeComparison($a, $b)**<br>
-   Used to ensure that the comparing two strings will always take the same amount
-   of time regardless of whether they are the same or not.
+   Compares two strings in constant time. Kept under its original name; it now
+   delegates to `hash_equals()` rather than looping over the bytes by hand.
+
+Only `sha256` and `sha512` are accepted as MAC algorithms (`Crypto::ALGORITHMS`).
+Anything else is rejected with `Byfareska\Hawk\Exception\InvalidArgumentException`
+instead of reaching `hash_hmac()`, which would raise a `ValueError`.
 
 
-### Dflydev\Hawk\Crypto\Artifacts
+### Byfareska\Hawk\Crypto\Artifacts
 
 A container for all of the pieces of data that may go into the creation of a
 MAC.
@@ -470,7 +519,7 @@ MAC.
 Credentials
 -----------
 
-### Dflydev\Hawk\Credentials\CredentialsInterface
+### Byfareska\Hawk\Credentials\CredentialsInterface
 
 Represents a valid set of credentials.
 
@@ -480,14 +529,14 @@ Represents a valid set of credentials.
 
 In some contexts only the key may be known.
 
-### Dflydev\Hawk\Credentials\Credentials
+### Byfareska\Hawk\Credentials\Credentials
 
 A simple implementation of `CredentialsInterface`.
 
 ```php
 <?php
 
-$credentials = new Dflydev\Hawk\Credentials\Credentials(
+$credentials = new Byfareska\Hawk\Credentials\Credentials(
     $key,        // shared key
     $algorithm,  // default: sha256
     $id          // identifier, default: null
@@ -499,13 +548,13 @@ $credentials = new Dflydev\Hawk\Credentials\Credentials(
 Header
 ------
 
-### Dflydev\Hawk\Header\Header
+### Byfareska\Hawk\Header\Header
 
  * **fieldName()**: The name for the header field
  * **fieldValue()**: The value for the header field
  * **attributes()**: The attributes used to build the field value
 
-### Dflydev\Hawk\Header\HeaderFactory
+### Byfareska\Hawk\Header\HeaderFactory
 
  * **create($fieldName, array $attributes = null)**<br>
    Creates a Hawk header for a given field name for a set of attributes.
@@ -516,44 +565,55 @@ Header
 
    Throws:
 
-    * **Dflydev\Hawk\Header\FieldValueParserException**
-    * **Dflydev\Hawk\Header\NotHawkAuthorizationException**
+    * **Byfareska\Hawk\Header\FieldValueParserException**
+    * **Byfareska\Hawk\Header\NotHawkAuthorizationException**
 
-### Dflydev\Hawk\Header\HeaderParser
+### Byfareska\Hawk\Header\HeaderParser
 
  * **parseFieldValue($fieldValue, array $requiredKeys = null)**<br>
    Parses a field value string into an associative array of attributes.
 
    Throws:
 
-    * **Dflydev\Hawk\Header\FieldValueParserException**
-    * **Dflydev\Hawk\Header\NotHawkAuthorizationException**
+    * **Byfareska\Hawk\Header\FieldValueParserException**
+    * **Byfareska\Hawk\Header\NotHawkAuthorizationException**
 
-### Dflydev\Hawk\Header\FieldValueParserException
+### Byfareska\Hawk\Header\FieldValueParserException
 
 Indicates that a string claims to be a Hawk string but it cannot be completely
 parsed. This is mostly a sign of a corrupted or malformed header value.
 
-### Dflydev\Hawk\Header\NotHawkAuthorizationException
+### Byfareska\Hawk\Header\NotHawkAuthorizationException
 
 Indicates that the string has nothing to do with Hawk. Currently means that the
 string does not start with 'Hawk'.
 
 
+Exceptions
+----------
+
+Every exception thrown by this library implements
+`Byfareska\Hawk\Exception\HawkException`, so a caller can catch the whole
+package with one `catch` instead of falling back to `\Throwable`:
+
+ * `Byfareska\Hawk\Server\UnauthorizedException` — the request did not
+   authenticate. This is a normal outcome, not a failure.
+ * `Byfareska\Hawk\Header\NotHawkAuthorizationException`,
+   `Byfareska\Hawk\Header\FieldValueParserException` — the field value could
+   not be read as a Hawk header.
+ * `Byfareska\Hawk\Exception\InvalidArgumentException` — misuse of the API
+   (an unsupported algorithm, a relative URI, a backslash in a bewit field).
+
+
 License
 -------
 
-MIT, see LICENSE.
-
-
-Community
----------
-
-If you have questions or want to help out, join us in **#dflydev** on
-**irc.freenode.net**.
+MIT, see LICENSE. Copyright is shared: the original work is
+© 2013 Dragonfly Development Inc., the fork © 2026 Byfareska.
 
 
 [0]: https://github.com/hueniverse/hawk
 [1]: http://getcomposer.org/
-[2]: http://packagist.org/packages/dflydev/hawk
+[2]: https://packagist.org/packages/byfareska/hawk
 [3]: https://github.com/hueniverse/oz
+[4]: https://github.com/dflydev/dflydev-hawk

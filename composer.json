@@ -1,36 +1,53 @@
 {
-    "name": "dflydev/hawk",
-    "description": "Hawk",
-    "keywords": ["hawk", "authentication", "bewit"],
+    "name": "byfareska/hawk",
+    "description": "Hawk HTTP authentication (MAC-signed requests and bewit-signed URIs) for modern PHP — a maintained fork of dflydev/hawk",
+    "keywords": ["hawk", "authentication", "bewit", "hmac", "signed-url"],
     "license": "MIT",
     "authors": [
         {
             "name": "Dragonfly Development Inc.",
             "email": "info@dflydev.com",
-            "homepage": "http://dflydev.com"
+            "homepage": "http://dflydev.com",
+            "role": "Original author"
         },
         {
             "name": "Beau Simensen",
             "email": "beau@dflydev.com",
-            "homepage": "http://beausimensen.com"
+            "homepage": "http://beausimensen.com",
+            "role": "Original author"
+        },
+        {
+            "name": "Byfareska",
+            "homepage": "https://github.com/byfareska",
+            "role": "Fork maintainer"
         }
     ],
-    "autoload": {
-        "psr-0": {
-            "Dflydev\\Hawk": "src"
-        }
-    },
     "require": {
-        "ircmaxell/random-lib": "^1.0@dev"
+        "php": ">=8.3",
+        "ext-hash": "*"
     },
     "require-dev": {
-        "codeclimate/php-test-reporter": "~0.1@dev",
-        "phpunit/phpunit": "~4.5",
-        "squizlabs/php_codesniffer": "~2.3"
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5 || ^12.0"
     },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.0.x-dev"
+    "autoload": {
+        "psr-4": {
+            "Byfareska\\Hawk\\": "src/"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Byfareska\\Hawk\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "phpstan": "phpstan analyse",
+        "cs": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix"
+    },
+    "config": {
+        "sort-packages": true
     }
 }
