@@ -71,7 +71,7 @@ verified in both directions against the original package.
 
  * Package renamed to `byfareska/hawk`, namespace `Dflydev\Hawk` →
    `Byfareska\Hawk`, autoloading PSR-0 → PSR-4.
- * Requires PHP 8.3+. `declare(strict_types=1)` throughout, native parameter and
+ * Requires PHP 8.4+. `declare(strict_types=1)` throughout, native parameter and
    return types, promoted constructor properties, `final readonly` value objects.
    The original created dynamic properties, deprecated since PHP 8.2 and an error
    in PHP 9.

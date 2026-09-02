@@ -16,7 +16,7 @@ protocol behaviour is unchanged.
 
 What the fork changes:
 
- * **Runs on modern PHP.** Requires PHP 8.3+, declares strict types, uses typed
+ * **Runs on modern PHP.** Requires PHP 8.4+, declares strict types, uses typed
    properties and promoted constructors. The original relied on dynamic
    properties, which PHP 8.2 deprecated and PHP 9 will reject outright.
  * **No dependencies.** Nonces now come from `random_bytes()` instead of
@@ -54,7 +54,7 @@ Through [Composer][1] as [byfareska/hawk][2]:
 composer require byfareska/hawk
 ```
 
-Requires PHP 8.3 or newer. No runtime dependencies.
+Requires PHP 8.4 or newer. No runtime dependencies.
 
 
 Client
